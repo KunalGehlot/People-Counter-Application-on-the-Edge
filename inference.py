@@ -48,7 +48,6 @@ class Network:
         model_xml = model
         model_bin = os.path.splitext(model_xml)[0] + ".bin"
 
-
         self.plugin = IEPlugin(device=device)
 
         ### TODO: Add any necessary extensions ###
@@ -66,7 +65,7 @@ class Network:
             print("Check whether extensions are available to add to IECore.")
             exit(1)
 
-        self.exec_network = self.plugin.load(network = self.network)
+        self.exec_network = self.plugin.load(network=self.network)
 
         self.input_blob = next(iter(self.network.inputs))
         self.out_blob = next(iter(self.network.outputs))
@@ -76,6 +75,7 @@ class Network:
 
     def get_input_shape(self):
         ### TODO: Return the shape of the input layer ###
+        #print(self.network.inputs[self.input_blob], "\n---------------------------------------   INPUT BLOB  ---------------------------------------")
         return self.network.inputs[self.input_blob].shape
 
     def exec_net(self, image):
@@ -97,9 +97,9 @@ class Network:
         # TODO: Extract and return the output results
         ### Note: You may need to update the function parameters. ###
         return self.exec_network.requests[0].outputs[self.output_blob]
-    
+
     def kill(self):
-        
+
         del self.exec_network
         del self.plugin
         del self.network

@@ -46,7 +46,7 @@ def build_argparser():
     """
     parser = ArgumentParser("Run Inference with Video/ Image")
 
-    parser.add_argument("-m", "--model", required=True, type=str,
+    parser.add_argument("-m", "--model", required=False, type=str,
                         help="Path to an xml file with a trained model.", default="mask_rcnn_inception_v2_coco_2018_01_28/frozen_inference_graph.xml")
     parser.add_argument("-i", "--input", required=False, type=str,
                         help="Path to image or video file", default='resources/Pedestrian_Detect_2_1_1.mp4')
@@ -105,13 +105,18 @@ def infer_on_stream(args, client):
     # Set Probability threshold for detections
     probabily_threshold = args.prob_threshold
     ### TODO: Load the model through `infer_network` ###
-    no, chnl, H, W = infer_network.load_model(
-        args.model, args.device, args.cpu_extension)[1]
+    no, chnl = infer_network.load_model(
+        args.model, args.device, args.cpu_extension)
+    print("---------------------------------------  INFER NETWORK   ---------------------------------------")
     ### TODO: Handle the input stream ###
     cap = cv2.VideoCapture(args.input)
     cap.open(args.input)
+    print("---------------------------------------  CAP OPEN   ---------------------------------------")
+    exit(1)
     width = int(cap.get(3))
     height = int(cap.get(4))
+    print(width, "---/---", height)
+    print("---------------------------------------  WIDTH/HEIGHT   ---------------------------------------")
     ### TODO: Loop until stream is over ###
     while cap.isOpened():
         
@@ -124,13 +129,15 @@ def infer_on_stream(args, client):
             break
         key_pressed = cv2.waitKey(60)
         ### TODO: Pre-process the image as needed ###
-
-        p_frame = cv2.resize(frame, (W, H))
-        p_frame = p_frame.transpose((2, 0, 1))
-        p_frame = p_frame.reshape((no, chnl, W, H))
+        print(frame.shape, "\n---------------------------------------  FRAME   ---------------------------------------")
+        p_frame = cv2.resize(frame, (width, height))
+        #p_frame = p_frame.transpose()
+        #p_frame = p_frame.reshape(1, (height, width, frame))
+        print((1, p_frame), "\n---------------------------------------  P_FRAME   ---------------------------------------")
+        exit(1)
         ### TODO: Start asynchronous inference for specified request ###
         start_t = time.time()
-        infer_network.exec_net(p_frame)
+        infer_network.exec_net(1, p_frame)
         ### TODO: Wait for the result ###
         if infer_network.wait() == 0:
             on_t = time.time() - start_t
@@ -184,6 +191,8 @@ def main():
     # Grab command line args
     args = build_argparser().parse_args()
     # Connect to the MQTT server
+    print(args, "\n---------------------------------------  ARGS    ---------------------------------------")
+    
     client = connect_mqtt()
     # Perform inference on the input stream
     infer_on_stream(args, client)
