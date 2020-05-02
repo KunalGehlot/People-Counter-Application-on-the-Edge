@@ -23,19 +23,21 @@
 # MQTT server environment variables
 import os
 import sys
-import time
-import socket
-import json
 import cv2
+import time
+import json
+import numpy
+import socket
 import logging as log
+from inference import Network
 import paho.mqtt.client as mqtt
 from argparse import ArgumentParser
-from inference import Network
+
+MQTT_PORT = 3001
+MQTT_KEEPALIVE_INTERVAL = 60
 HOSTNAME = socket.gethostname()
 IPADDRESS = socket.gethostbyname(HOSTNAME)
 MQTT_HOST = IPADDRESS
-MQTT_PORT = 3001
-MQTT_KEEPALIVE_INTERVAL = 60
 
 
 def build_argparser():
@@ -105,18 +107,23 @@ def infer_on_stream(args, client):
     # Set Probability threshold for detections
     probabily_threshold = args.prob_threshold
     ### TODO: Load the model through `infer_network` ###
-    no, chnl = infer_network.load_model(
-        args.model, args.device, args.cpu_extension)
+    output = infer_network.load_model(args.model, args.device)
+    # no, chnl = infer_network.load_model(
+    #     args.model, args.device, args.cpu_extension)
     print("---------------------------------------  INFER NETWORK   ---------------------------------------")
     ### TODO: Handle the input stream ###
     cap = cv2.VideoCapture(args.input)
+    if not cap.isOpened():
+        print("Unable to open input. Exiting...")
+        exit(1)
     cap.open(args.input)
     print("---------------------------------------  CAP OPEN   ---------------------------------------")
-    exit(1)
+#    exit(1)
     width = int(cap.get(3))
     height = int(cap.get(4))
     print(width, "---/---", height)
     print("---------------------------------------  WIDTH/HEIGHT   ---------------------------------------")
+    
     ### TODO: Loop until stream is over ###
     while cap.isOpened():
         
@@ -126,23 +133,45 @@ def infer_on_stream(args, client):
         ### TODO: Read from the video capture ###
         flag, frame = cap.read()
         if not flag:
-            break
+            print("Cannot read the input stream. Exiting...")
+            exit(1)
         key_pressed = cv2.waitKey(60)
         ### TODO: Pre-process the image as needed ###
-        print(frame.shape, "\n---------------------------------------  FRAME   ---------------------------------------")
-        p_frame = cv2.resize(frame, (width, height))
-        #p_frame = p_frame.transpose()
-        #p_frame = p_frame.reshape(1, (height, width, frame))
-        print((1, p_frame), "\n---------------------------------------  P_FRAME   ---------------------------------------")
-        exit(1)
+        old_size = frame.shape[:2] # old_size is in (height, width) format
+
+        ratio = float(800)/max(old_size)
+        new_size = tuple([int(x*ratio) for x in old_size])
+        # new_size should be in (width, height) format
+        p_frame = cv2.resize(frame, (new_size[1], new_size[0]))
+
+        delta_w = 800 - new_size[1]
+        delta_h = 800 - new_size[0]
+        top, bottom = delta_h//2, delta_h-(delta_h//2)
+        left, right = delta_w//2, delta_w-(delta_w//2)
+        color = [0, 0, 0]
+        p_frame = cv2.copyMakeBorder(p_frame, top, bottom, left, right, cv2.BORDER_CONSTANT,
+            value=color)
+        print(p_frame.shape, "\n---------------------------------------  FRAME   ---------------------------------------")
+        p_frame = cv2.resize(p_frame, (800, 800))
+        p_frame = p_frame.transpose((2, 0, 1))
+        p_frame = p_frame.reshape(1, 3, 800, 800)
+        print((p_frame.shape), "\n---------------------------------------  P_FRAME   ---------------------------------------")
+        # exit(1)
         ### TODO: Start asynchronous inference for specified request ###
         start_t = time.time()
-        infer_network.exec_net(1, p_frame)
+        
+        print("---------------------------------------  MODEL LOADED!   ---------------------------------------")
+        print("Output: ", output)
+        handler = infer_network.exec_net(p_frame)
+        print("---------------------------------------  Network executed   ---------------------------------------")
         ### TODO: Wait for the result ###
-        if infer_network.wait() == 0:
+        if handler.wait() == 0:
             on_t = time.time() - start_t
         ### TODO: Get the results of the inference request ###
         result = infer_network.get_output()
+        print("---------------------------------------  Output Blob Received!   ---------------------------------------")
+        a,b,c,d = infer_network.get_input_shape()
+        print("---------------------------------------  Got the shape output!   ---------------------------------------")
         frame, count = draw_boxes(
             frame, result, width, height, probabily_threshold)
         ### TODO: Extract any desired stats from the results ###
