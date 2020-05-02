@@ -154,7 +154,8 @@ def infer_on_stream(args, client):
         print(p_frame.shape, "\n---------------------------------------  FRAME   ---------------------------------------")
         p_frame = cv2.resize(p_frame, (800, 800))
         p_frame = p_frame.transpose((2, 0, 1))
-        p_frame = p_frame.reshape(1, 3, 800, 800)
+        p_frame = p_frame.reshape(1, 3
+                                  , 800, 800)
         print((p_frame.shape), "\n---------------------------------------  P_FRAME   ---------------------------------------")
         # exit(1)
         ### TODO: Start asynchronous inference for specified request ###
