@@ -25,7 +25,7 @@
 import os
 import sys
 import logging as log
-from openvino.inference_engine import IENetwork, IEPlugin
+from openvino.inference_engine import IENetwork, IECore
 
 
 class Network:
@@ -44,54 +44,56 @@ class Network:
         self.infer_request = None
 
     def load_model(self, model, device="CPU", cpu_extension=None, plugin=None):
-            ### TODO: Load the model ###
+        print("**********    Network.load_model initialized    **********")
+        ### TODO: Load the model ###
         model_xml = model
         model_bin = os.path.splitext(model_xml)[0] + ".bin"
-
-        self.plugin = IEPlugin(device=device)
-
-        ### TODO: Add any necessary extensions ###
-        if cpu_extension and "CPU" in device:
-            self.plugin.add_extension(cpu_extension)
-
-        self.network = IENetwork(model=model_xml, weights=model_bin)
-
+        print("----------   Model and Weights loaded    ----------")
+        self.plugin = IECore()
+        self.network = IENetwork(model = model_xml, weights = model_bin)
+        print("----------   IE Core and Network loaded  ----------")
         ### TODO: Check for supported layers ###
-        supported_layers = self.plugin.get_supported_layers(self.network)
+        supported_layers = self.plugin.query_network(network = self.network, device_name = device)
         unsupported_layers = [
             l for l in self.network.layers.keys() if l not in supported_layers]
         if len(unsupported_layers) != 0:
             print("Unsupported layers found: {}".format(unsupported_layers))
-            print("Check whether extensions are available to add to IECore.")
+            print("Check whether extensions are available to add to IECore. Exiting...")
             exit(1)
-
-        self.exec_network = self.plugin.load(network=self.network)
-
+        print("----------    Checked for supported layers    ----------")
+        ### TODO: Add any necessary extensions ###
+        if cpu_extension and "CPU" in device:
+            self.plugin.add_extension(cpu_extension, device)
+        print("----------    Added CPU extension    ----------")
+        self.exec_network = self.plugin.load_network(self.network, device)
+        print("----------    Network loaded    ----------")
         self.input_blob = next(iter(self.network.inputs))
-        self.out_blob = next(iter(self.network.outputs))
+        self.output_blob = next(iter(self.network.outputs))
+        print("**********    Network.load_model finished    **********")
         ### TODO: Return the loaded inference plugin ###
         ### Note: You may need to update the function parameters. -- Loaded with model, device, CPU_EXTENSION, plugin ###
-        return self.plugin, self.get_input_shape()
+
 
     def get_input_shape(self):
         ### TODO: Return the shape of the input layer ###
-        #print(self.network.inputs[self.input_blob], "\n---------------------------------------   INPUT BLOB  ---------------------------------------")
         return self.network.inputs[self.input_blob].shape
+    
+    def get_output_shape(self):
+        ### NODO: Return the shape of the output layer ###
+        return self.network.outputs[self.output_blob].shape
 
     def exec_net(self, image):
         ### TODO: Start an asynchronous request ###
         self.exec_network.start_async(request_id=0,
                                       inputs={self.input_blob: image})
-        ### TODO: Return any necessary information ###
+        ### TODO: Return any necessary information -- None ###
         ### Note: You may need to update the function parameters. -- Loaded with image ###
-        return self.exec_network
 
     def wait(self):
         ### TODO: Wait for the request to be complete. ###
-        status = self.exec_network.requests[0].wait(-1)
         ### TODO: Return any necessary information ###
         ### Note: You may need to update the function parameters. ###
-        return status
+        return self.exec_network.requests[0].wait(-1)
 
     def get_output(self):
         # TODO: Extract and return the output results
@@ -99,7 +101,7 @@ class Network:
         return self.exec_network.requests[0].outputs[self.output_blob]
 
     def kill(self):
-
+        print("----------   Killing Plugin and Network    ----------")
         del self.exec_network
         del self.plugin
         del self.network
