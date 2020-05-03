@@ -154,60 +154,68 @@ def infer_on_stream(args, client):
         p_frame = p_frame.transpose((2,0,1))
         p_frame = p_frame.reshape(1, *p_frame.shape)
         print("----------\tImage Resized to fit: ", p_frame, "\t----------")
-        ### TODO: Start asynchronous inference for specified request ###
-        start_t = time.time()
         exit(1)
-        print("---------------------------------------  MODEL LOADED!   ---------------------------------------")
-        print("Output: ", output)
-        handler = infer_network.exec_net(p_frame)
-        print("---------------------------------------  Network executed   ---------------------------------------")
+        
+        ### TODO: Start asynchronous inference for specified request ###
+        infer_network.exec_net(p_frame)
+        print("----------\tASync Start\t----------")
+        
         ### TODO: Wait for the result ###
-        if handler.wait() == 0:
-            on_t = time.time() - start_t
-        ### TODO: Get the results of the inference request ###
-        result = infer_network.get_output()
-        print("---------------------------------------  Output Blob Received!   ---------------------------------------")
-        a, b, c, d = infer_network.get_input_shape()
-        print("---------------------------------------  Got the shape output!   ---------------------------------------")
-        frame, count = draw_boxes(
+        if infer_network.wait() == 0:
+            print("----------\tASync Wait\t----------")
+            
+            ### TODO: Get the results of the inference request ###
+            result = infer_network.get_output()
+            print("----------\tInference Output: ",result,"\t----------")
+            
+            ### TODO: Extract any desired stats from the results ###
+            frame, count = draw_boxes(
             frame, result, width, height, probabily_threshold)
-        ### TODO: Extract any desired stats from the results ###
-        on_t_mssg = "Screen on time: {:.3f}ms".format(on_t * 1000)
-
-        ### Write Scree-on time and count on screen ###
-        cv2.putText(frame, on_t_mssg, (15, 15), 0.5, (215, 20, 20), 1)
-        cv2.putText(frame, on_t_mssg, (30, 15), 0.5, (215, 20, 20), 1)
-        ### Detect new person ###
-        if count > p_count:
-            new_t = time.time()
-            t_count += count - p_count
+            
+            on_t = frames/fps
+            ### Detect new person ###
+            if not found and count > 0:
+                t_count = t_count + count
+                found = True
+            if found and count>0:
+                frames = frames + 1
+            if found and count == 0:
+                found = False
+                ### Send to MQTT Server ###
+                on_t = int(frames/fps)
+                client.publish("Person/Duration", json.dumps({"duration": on_t}))
+                frames = 0
             ### Send to MQTT Server ###
-            client.publish("Person", json.dumps({"Total Count": t_count}))
-
-        if count < p_count:
-            duration = int(time.time() - new_t)
-            ### Send to MQTT Server ###
-            client.publish("Person/ Duration",
-                           json.dumps({"Duration": duration}))
-        ### Print count on screen ###
-        count_mssg = "People counted: {0}".format(count)
-        ### Send Count to MQTT Server ###
-        client.publish("Person", json.dumps({"count": t_count}))
-        p_count = count
+            client.publish("Person",
+                           json.dumps({"count": count, "total": t_count}))
+            
+            ### TODO: Extract any desired stats from the results ###
+            on_t_mssg = "On Screen time: {:.3f}ms".format(on_t * 1000)
+            count_mssg = "People counted: {0}".format(t_count)
+            print(on_t_mssg)
+            print("----------\tOn Screen Time\t----------")
+            print(count_mssg)
+            print("----------\tTotal Count\t----------")
+            ### Write Scree-on time and count on screen ###
+            cv2.putText(frame, count_mssg, (15, 15), 0.5, (215, 20, 20), 1)
+            cv2.putText(frame, on_t_mssg, (30, 15), 0.5, (215, 20, 20), 1)
+        
         ### TODO: Send the frame to the FFMPEG server ###
-        sys.stdout.buffer.write(frame)
-        sys.stdout.flush()
+        if frame_count>0 or frame_count == -1:    
+            sys.stdout.buffer.write(frame)
+            sys.stdout.flush()
+            
         ### TODO: Write an output image if `single_image_mode` ###
-
+        else:
+            cv2.imwrite("output.jpg", frame)
+            print("-*-*-*-*-*\tImage saved: output.jpg\t*-*-*-*-*-")
         if key_pressed == 27:
             break
+    
     cap.release()
     cv2.destroyAllWindows()
     # TODO: Disconnect from MQTT
     client.disconnect()
-
-    return
-
 
 def main():
     """
@@ -226,4 +234,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+    Network.kill()
     exit(0)

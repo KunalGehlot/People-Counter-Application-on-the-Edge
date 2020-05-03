@@ -67,7 +67,12 @@ class Network:
         print("----------\tAdded CPU extension\t----------")
         self.exec_network = self.plugin.load_network(self.network, device)
         print("----------\tNetwork loaded\t----------")
-        self.input_blob = next(iter(self.network.inputs))
+        it = iter(self.network.inputs)
+        self.input_blob_info = None
+        self.input_blob = next(it)
+        if self.input_blob == "image_info":
+            self.input_blob_info = self.input_blob
+            self.input_blob = next(it)
         self.output_blob = next(iter(self.network.outputs))
         print("**********\tNetwork.load_model finished\t**********\n")
         ### TODO: Return the loaded inference plugin ###
@@ -84,8 +89,11 @@ class Network:
 
     def exec_net(self, image):
         ### TODO: Start an asynchronous request ###
-        self.exec_network.start_async(request_id=0,
-                                      inputs={self.input_blob: image})
+        inputs = {self.input_blob: image}
+        if self.input_blob_info == "image_info":
+            inputs = {self.input_blob_info: \
+                (image.shape[2], image.shape[3], 1), self.input_blob: image}
+        self.exec_network.start_async(request_id=0, inputs=inputs)
         ### TODO: Return any necessary information -- None ###
         ### Note: You may need to update the function parameters. -- Loaded with image ###
 
