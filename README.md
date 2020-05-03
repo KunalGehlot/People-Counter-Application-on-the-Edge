@@ -682,7 +682,10 @@ classid probability
 
 ### Why you might need to handle custom layers?
 
-Some of the potential reasons for handling custom layers are...
+Some of the potential reasons for handling custom layers are:
+- You might want to run some experimental layer on top of what already exists in the list of supported layer. 
+- The Layers you're trying to run uses unsupported input/ output shapes or formats.
+- You're trying to run a framework out of the support frameworks like Tensorflow, ONNX, Caffe.
 
 ## Comparing Model Performance
 
