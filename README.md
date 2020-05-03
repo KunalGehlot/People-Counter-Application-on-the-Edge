@@ -1,26 +1,24 @@
-# People Counter (AI on the Edge)
+# People Counter (AI on the Edge)<!-- omit in toc -->
 
-### This Project is a submission of the first project in **Intel Edge AI Nanodegree** at Udacity.
+### This Project is a submission of the first project in **Intel Edge AI Nanodegree** at Udacity.<!-- omit in toc -->
 
-# Index
+# Index<!-- omit in toc -->
 
-- [Introduction](#Introduction)
-  -
-  - What it Does
-  - How it Works
-  - [Requirements](#requirements-only-for-this-code)
-    - Hardware
-    - Software
-
-- [How to Run](#how-to-run)
-  -
-  - Step 1 - Start the Mosca server
-  - Step 2 - Start the GUI
-  - Step 3 - FFmpeg Server
-  - Step 4 - Run the code
-    - [Running on CPU](#running-on-cpu-default)
+- [Introduction](#introduction)
+  - [What it Does](#what-it-does)
+  - [How it Works](#how-it-works)
+  - [Requirements (Only for this code)](#requirements-only-for-this-code)
+    - [Hardware](#hardware)
+    - [Software](#software)
+- [How to run](#how-to-run)
+    - [Follow the Instruction to Setup your environment given here](#follow-the-instruction-to-setup-your-environment-given-here)
+    - [Step 1 - Start the Mosca server](#step-1---start-the-mosca-server)
+    - [Step 2 - Start the GUI](#step-2---start-the-gui)
+    - [Step 3 - FFmpeg Server](#step-3---ffmpeg-server)
+    - [Step 4 - Run the code](#step-4---run-the-code)
+      - [Setup the environment](#setup-the-environment)
+      - [Running on CPU (Default)](#running-on-cpu-default)
 - [Project Write-Up](#project-write-up)
-  - 
   - [What are Custom Layers](#what-are-custom-layers)
   - [Comparing Model Performance](#comparing-model-performance)
   - [Assess Model Use Cases](#assess-model-use-cases)
