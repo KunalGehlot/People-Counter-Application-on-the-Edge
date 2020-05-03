@@ -44,14 +44,14 @@ class Network:
         self.infer_request = None
 
     def load_model(self, model, device="CPU", cpu_extension=None, plugin=None):
-        print("**********    Network.load_model initialized    **********")
+        print("**********\tNetwork.load_model initialized\t**********\n")
         ### TODO: Load the model ###
         model_xml = model
         model_bin = os.path.splitext(model_xml)[0] + ".bin"
-        print("----------   Model and Weights loaded    ----------")
+        print("----------\tModel and Weights loaded\t----------")
         self.plugin = IECore()
         self.network = IENetwork(model = model_xml, weights = model_bin)
-        print("----------   IE Core and Network loaded  ----------")
+        print("----------\tIE Core and Network loaded\t----------")
         ### TODO: Check for supported layers ###
         supported_layers = self.plugin.query_network(network = self.network, device_name = device)
         unsupported_layers = [
@@ -60,16 +60,16 @@ class Network:
             print("Unsupported layers found: {}".format(unsupported_layers))
             print("Check whether extensions are available to add to IECore. Exiting...")
             exit(1)
-        print("----------    Checked for supported layers    ----------")
+        print("----------\tChecked for supported layers\t----------")
         ### TODO: Add any necessary extensions ###
         if cpu_extension and "CPU" in device:
             self.plugin.add_extension(cpu_extension, device)
-        print("----------    Added CPU extension    ----------")
+        print("----------\tAdded CPU extension\t----------")
         self.exec_network = self.plugin.load_network(self.network, device)
-        print("----------    Network loaded    ----------")
+        print("----------\tNetwork loaded\t----------")
         self.input_blob = next(iter(self.network.inputs))
         self.output_blob = next(iter(self.network.outputs))
-        print("**********    Network.load_model finished    **********")
+        print("**********\tNetwork.load_model finished\t**********\n")
         ### TODO: Return the loaded inference plugin ###
         ### Note: You may need to update the function parameters. -- Loaded with model, device, CPU_EXTENSION, plugin ###
 

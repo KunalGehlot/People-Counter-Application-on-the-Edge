@@ -19,20 +19,21 @@
  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
+# import numpy
 
 # MQTT server environment variables
+
 import os
 import sys
 import cv2
 import time
 import json
-import numpy
 import socket
 import logging as log
 from inference import Network
+from datetime import datetime
 import paho.mqtt.client as mqtt
 from argparse import ArgumentParser
-
 MQTT_PORT = 3001
 MQTT_KEEPALIVE_INTERVAL = 60
 HOSTNAME = socket.gethostname()
@@ -46,10 +47,11 @@ def build_argparser():
 
     :return: command line arguments
     """
-    parser = ArgumentParser("Run Inference with Video/ Image")
+    parser = ArgumentParser(
+        "*-*-*-*-*-*-*-*-*-*-*-*    Run Inference with Video/ Image    *-*-*-*-*-*-*-*-*-*-*-*")
 
     parser.add_argument("-m", "--model", required=False, type=str,
-                        help="Path to an xml file with a trained model.", default="mask_rcnn_inception_v2_coco_2018_01_28/frozen_inference_graph.xml")
+                        help="Path to an xml file with a trained model.", default="frozen_inference_graph.xml")
     parser.add_argument("-i", "--input", required=False, type=str,
                         help="Path to image or video file", default='resources/Pedestrian_Detect_2_1_1.mp4')
     parser.add_argument("-l", "--cpu_extension", required=False, type=str,
@@ -101,66 +103,60 @@ def infer_on_stream(args, client):
     :param client: MQTT client
     :return: None
     """
-
+    print("**********\tinfer_on_stream initialized\t**********\n")
     # Initialise the class
     infer_network = Network()
+
     # Set Probability threshold for detections
     probabily_threshold = args.prob_threshold
+
     ### TODO: Load the model through `infer_network` ###
-    output = infer_network.load_model(args.model, args.device)
-    # no, chnl = infer_network.load_model(
-    #     args.model, args.device, args.cpu_extension)
-    print("---------------------------------------  INFER NETWORK   ---------------------------------------")
+    infer_network.load_model(args.model, args.device,
+                             args.cpu_extension)
+
+    in_shape = infer_network.get_input_shape()
+    print("----------\tInput Shape of the Model: " +
+          str(in_shape), "\t----------")
+    # exit(1)
+    
     ### TODO: Handle the input stream ###
     cap = cv2.VideoCapture(args.input)
     if not cap.isOpened():
         print("Unable to open input. Exiting...")
         exit(1)
     cap.open(args.input)
-    print("---------------------------------------  CAP OPEN   ---------------------------------------")
+    print("----------\tVideo Capture Opened\t----------")
 #    exit(1)
     width = int(cap.get(3))
     height = int(cap.get(4))
-    print(width, "---/---", height)
-    print("---------------------------------------  WIDTH/HEIGHT   ---------------------------------------")
+    fps = int(cap.get(5))
+    frame_count = int(cap.get(7))
+    print("----------\tWidth:", width, "Height:", height, "\t----------")
+    # exit(1)
+    frames = 0
+    found = False
+    t_count = 0
     
     ### TODO: Loop until stream is over ###
     while cap.isOpened():
-        
-        p_count = 0
-        t_count = 0
-        new_t = 0
+        print("-----------\tStream Loop Started\t-----------")
         ### TODO: Read from the video capture ###
         flag, frame = cap.read()
         if not flag:
             print("Cannot read the input stream. Exiting...")
             exit(1)
         key_pressed = cv2.waitKey(60)
+        
         ### TODO: Pre-process the image as needed ###
-        old_size = frame.shape[:2] # old_size is in (height, width) format
-
-        ratio = float(800)/max(old_size)
-        new_size = tuple([int(x*ratio) for x in old_size])
-        # new_size should be in (width, height) format
-        p_frame = cv2.resize(frame, (new_size[1], new_size[0]))
-
-        delta_w = 800 - new_size[1]
-        delta_h = 800 - new_size[0]
-        top, bottom = delta_h//2, delta_h-(delta_h//2)
-        left, right = delta_w//2, delta_w-(delta_w//2)
-        color = [0, 0, 0]
-        p_frame = cv2.copyMakeBorder(p_frame, top, bottom, left, right, cv2.BORDER_CONSTANT,
-            value=color)
-        print(p_frame.shape, "\n---------------------------------------  FRAME   ---------------------------------------")
-        p_frame = cv2.resize(p_frame, (800, 800))
-        p_frame = p_frame.transpose((2, 0, 1))
-        p_frame = p_frame.reshape(1, 3
-                                  , 800, 800)
-        print((p_frame.shape), "\n---------------------------------------  P_FRAME   ---------------------------------------")
-        # exit(1)
+        if frame_count == -1:
+            frame  = cv2.cvtColor((frame, cv2.COLOR_YUV2BGR_I420))
+        p_frame = cv2.resize(frame, (in_shape[3], in_shape[2]))
+        p_frame = p_frame.transpose((2,0,1))
+        p_frame = p_frame.reshape(1, *p_frame.shape)
+        print("----------\tImage Resized to fit: ", p_frame, "\t----------")
         ### TODO: Start asynchronous inference for specified request ###
         start_t = time.time()
-        
+        exit(1)
         print("---------------------------------------  MODEL LOADED!   ---------------------------------------")
         print("Output: ", output)
         handler = infer_network.exec_net(p_frame)
@@ -171,27 +167,28 @@ def infer_on_stream(args, client):
         ### TODO: Get the results of the inference request ###
         result = infer_network.get_output()
         print("---------------------------------------  Output Blob Received!   ---------------------------------------")
-        a,b,c,d = infer_network.get_input_shape()
+        a, b, c, d = infer_network.get_input_shape()
         print("---------------------------------------  Got the shape output!   ---------------------------------------")
         frame, count = draw_boxes(
             frame, result, width, height, probabily_threshold)
         ### TODO: Extract any desired stats from the results ###
         on_t_mssg = "Screen on time: {:.3f}ms".format(on_t * 1000)
-        
+
         ### Write Scree-on time and count on screen ###
-        cv2.putText(frame, on_t_mssg, (15,15), 0.5, (215,20,20) ,1)
-        cv2.putText(frame, on_t_mssg, (30,15), 0.5, (215,20,20) ,1)
+        cv2.putText(frame, on_t_mssg, (15, 15), 0.5, (215, 20, 20), 1)
+        cv2.putText(frame, on_t_mssg, (30, 15), 0.5, (215, 20, 20), 1)
         ### Detect new person ###
         if count > p_count:
             new_t = time.time()
             t_count += count - p_count
             ### Send to MQTT Server ###
             client.publish("Person", json.dumps({"Total Count": t_count}))
-        
+
         if count < p_count:
             duration = int(time.time() - new_t)
             ### Send to MQTT Server ###
-            client.publish("Person/ Duration", json.dumps({"Duration": duration}))
+            client.publish("Person/ Duration",
+                           json.dumps({"Duration": duration}))
         ### Print count on screen ###
         count_mssg = "People counted: {0}".format(count)
         ### Send Count to MQTT Server ###
@@ -221,8 +218,7 @@ def main():
     # Grab command line args
     args = build_argparser().parse_args()
     # Connect to the MQTT server
-    print(args, "\n---------------------------------------  ARGS    ---------------------------------------")
-    
+    # print(args, "\n---------------------------------------  ARGS    ---------------------------------------")
     client = connect_mqtt()
     # Perform inference on the input stream
     infer_on_stream(args, client)
