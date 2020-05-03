@@ -2,7 +2,7 @@
 
 ### Install the Windows Subsystem for Linux (WSL)
 
-To get started, install the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10). Select the Ubuntu 16 distribution.
+To get started, install the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10). Select the Ubuntu 18.04 distribution.
 
 Make sure to follow the instructions on the [Initialize a Distribution](https://docs.microsoft.com/en-us/windows/wsl/initialize-distro) page as well, especially the following command with the terminal window:
 

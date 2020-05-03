@@ -1,14 +1,37 @@
-# Deploy a People Counter App at the Edge
+# People Counter (AI on the Edge)
 
-| Details            |              |
-|-----------------------|---------------|
-| Programming Language: |  Python 3.5 or 3.6 |
+### This Project is a submission of the first project in **Intel Edge AI Nanodegree** at Udacity.
 
-![people-counter-python](./images/people-counter-image.png)
+# Index
+
+- [Introduction](#Introduction)
+  -
+  - What it Does
+  - How it Works
+  - [Requirements](#requirements-only-for-this-code)
+    - Hardware
+    - Software
+
+- [How to Run](#how-to-run)
+  -
+  - Step 1 - Start the Mosca server
+  - Step 2 - Start the GUI
+  - Step 3 - FFmpeg Server
+  - Step 4 - Run the code
+    - [Running on CPU](#running-on-cpu-default)
+- [Project Write-Up](#project-write-up)
+  - 
+  - [What are Custom Layers](#what-are-custom-layers)
+  - [Comparing Model Performance](#comparing-model-performance)
+  - [Assess Model Use Cases](#assess-model-use-cases)
+  - [Assess Effects on End-User Needs](#assess-effects-on-end-user-needs)
+  - [Model Research](#model-research)
+
+# Introduction
 
 ## What it Does
 
-The people counter application will demonstrate how to create a smart video IoT solution using Intel® hardware and software tools. The app will detect people in a designated area, providing the number of people in the frame, average duration of people in frame, and total count.
+The people counter application will demonstrate how to create a smart video IoT solution using Intel® hardware and software tools. The app will detect people in a designated area, providing the number of people in the frame, average duration of people in the frame, and total count.
 
 ## How it Works
 
@@ -18,82 +41,24 @@ You will choose a model to use and convert it with the Model Optimizer.
 
 ![architectural diagram](./images/arch_diagram.png)
 
-## Requirements
+## Requirements (Only for this code)
 
 ### Hardware
 
-* 6th to 10th generation Intel® Core™ processor with Iris® Pro graphics or Intel® HD Graphics.
-* OR use of Intel® Neural Compute Stick 2 (NCS2)
-* OR Udacity classroom workspace for the related course
+* 6th to 10th generation Intel® Core™ processor
 
 ### Software
 
-*   Intel® Distribution of OpenVINO™ toolkit 2019 R3 release
+*   Intel® Distribution of OpenVINO™ toolkit 2020 R1 release
 *   Node v6.17.1
 *   Npm v3.10.10
 *   CMake
 *   MQTT Mosca server
-  
-        
-## Setup
 
-### Install Intel® Distribution of OpenVINO™ toolkit
+# How to run
 
-Utilize the classroom workspace, or refer to the relevant instructions for your operating system for this step.
-
-- [Linux/Ubuntu](./linux-setup.md)
-- [Mac](./mac-setup.md)
-- [Windows](./windows-setup.md)
-
-### Install Nodejs and its dependencies
-
-Utilize the classroom workspace, or refer to the relevant instructions for your operating system for this step.
-
-- [Linux/Ubuntu](./linux-setup.md)
-- [Mac](./mac-setup.md)
-- [Windows](./windows-setup.md)
-
-### Install npm
-
-There are three components that need to be running in separate terminals for this application to work:
-
--   MQTT Mosca server 
--   Node.js* Web server
--   FFmpeg server
-     
-From the main directory:
-
-* For MQTT/Mosca server:
-   ```
-   cd webservice/server
-   npm install
-   ```
-
-* For Web server:
-  ```
-  cd ../ui
-  npm install
-  ```
-  **Note:** If any configuration errors occur in mosca server or Web server while using **npm install**, use the below commands:
-   ```
-   sudo npm install npm -g 
-   rm -rf node_modules
-   npm cache clean
-   npm config set registry "http://registry.npmjs.org"
-   npm install
-   ```
-
-## What model to use
-
-It is up to you to decide on what model to use for the application. You need to find a model not already converted to Intermediate Representation format (i.e. not one of the Intel® Pre-Trained Models), convert it, and utilize the converted model in your application.
-
-Note that you may need to do additional processing of the output to handle incorrect detections, such as adjusting confidence threshold or accounting for 1-2 frames where the model fails to see a person already counted and would otherwise double count.
-
-**If you are otherwise unable to find a suitable model after attempting and successfully converting at least three other models**, you can document in your write-up what the models were, how you converted them, and why they failed, and then utilize any of the Intel® Pre-Trained Models that may perform better.
-
-## Run the application
-
-From the main directory:
+### Follow the Instruction to Setup your environment given [here](Project_Default_Instructions.md/#Setup)
+Once you have successfully set-up your environment. From the main directory:
 
 ### Step 1 - Start the Mosca server
 
@@ -102,7 +67,7 @@ cd webservice/server/node-server
 node ./server.js
 ```
 
-You should see the following message, if successful:
+*You should see the following message, if successful:*
 ```
 Mosca server started.
 ```
@@ -115,7 +80,7 @@ cd webservice/ui
 npm run dev
 ```
 
-You should see the following message in the terminal.
+*You should see the following message in the terminal.*
 ```
 webpack: Compiled successfully
 ```
@@ -138,65 +103,72 @@ You must configure the environment to use the Intel® Distribution of OpenVINO�
 source /opt/intel/openvino/bin/setupvars.sh -pyver 3.5
 ```
 
-You should also be able to run the application with Python 3.6, although newer versions of Python will not work with the app.
+#### Running on CPU (Default)
 
-#### Running on the CPU
-
-When running Intel® Distribution of OpenVINO™ toolkit Python applications on the CPU, the CPU extension library is required. This can be found at: 
+Run the following command
 
 ```
-/opt/intel/openvino/deployment_tools/inference_engine/lib/intel64/
+python3 main.py -i resources/Pedestrian_Detect_2_1_1.mp4 -m frozen_inference_graph_frcnn.xml -d CPU -pt 0.7 | ffmpeg -v warning -f rawvideo -pixel_format bgr24 -video_size 768x432 -framerate 24 -i - http://0.0.0.0:3004/fac.ffm
 ```
 
-*Depending on whether you are using Linux or Mac, the filename will be either `libcpu_extension_sse4.so` or `libcpu_extension.dylib`, respectively.* (The Linux filename may be different if you are using a AVX architecture)
+*(Note: This command is only for running inference on CPU in Linux environment with Faster R-CNN Inception V2 on the given video file in resources, for any changes refer to default project instructions.)*
 
-Though by default application runs on CPU, this can also be explicitly specified by ```-d CPU``` command-line argument:
+# Project Write-Up
 
-```
-python main.py -i resources/Pedestrian_Detect_2_1_1.mp4 -m your-model.xml -l /opt/intel/openvino/deployment_tools/inference_engine/lib/intel64/libcpu_extension_sse4.so -d CPU -pt 0.6 | ffmpeg -v warning -f rawvideo -pixel_format bgr24 -video_size 768x432 -framerate 24 -i - http://0.0.0.0:3004/fac.ffm
-```
-If you are in the classroom workspace, use the “Open App” button to view the output. If working locally, to see the output on a web based interface, open the link [http://0.0.0.0:3004](http://0.0.0.0:3004/) in a browser.
+## What are Custom Layers
 
-#### Running on the Intel® Neural Compute Stick
+OpenVINO Toolkit Documentations has a [list of Supported Framework Layers](https://docs.openvinotoolkit.org/2019_R3/_docs_MO_DG_prepare_model_Supported_Frameworks_Layers.html) for DL Inference. Custom layers are layers that are not included in the list of known layers. If your topology contains any layers that are not in the list of known layers, the Model Optimizer classifies them as custom.
 
-To run on the Intel® Neural Compute Stick, use the ```-d MYRIAD``` command-line argument:
+*(Model Optimizer is a cross-platform command-line tool that facilitates the transition between the training and deployment environment, performs static model analysis, and adjusts deep learning models for optimal execution on end-point target devices. [Learn more about it here](https://docs.openvinotoolkit.org/latest/_docs_MO_DG_Deep_Learning_Model_Optimizer_DevGuide.html).)*
 
-```
-python3.5 main.py -d MYRIAD -i resources/Pedestrian_Detect_2_1_1.mp4 -m your-model.xml -pt 0.6 | ffmpeg -v warning -f rawvideo -pixel_format bgr24 -video_size 768x432 -framerate 24 -i - http://0.0.0.0:3004/fac.ffm
-```
 
-To see the output on a web based interface, open the link [http://0.0.0.0:3004](http://0.0.0.0:3004/) in a browser.
 
-**Note:** The Intel® Neural Compute Stick can only run FP16 models at this time. The model that is passed to the application, through the `-m <path_to_model>` command-line argument, must be of data type FP16.
+Some of the potential reasons for handling custom layers are...
 
-#### Using a camera stream instead of a video file
+## Comparing Model Performance
 
-To get the input video from the camera, use the `-i CAM` command-line argument. Specify the resolution of the camera using the `-video_size` command line argument.
+My method(s) to compare models before and after conversion to Intermediate Representations
+were...
 
-For example:
-```
-python main.py -i CAM -m your-model.xml -l /opt/intel/openvino/deployment_tools/inference_engine/lib/intel64/libcpu_extension_sse4.so -d CPU -pt 0.6 | ffmpeg -v warning -f rawvideo -pixel_format bgr24 -video_size 768x432 -framerate 24 -i - http://0.0.0.0:3004/fac.ffm
-```
+The difference between model accuracy pre- and post-conversion was...
 
-To see the output on a web based interface, open the link [http://0.0.0.0:3004](http://0.0.0.0:3004/) in a browser.
+The size of the model pre- and post-conversion was...
 
-**Note:**
-User has to give `-video_size` command line argument according to the input as it is used to specify the resolution of the video or image file.
+The inference time of the model pre- and post-conversion was...
 
-## A Note on Running Locally
+## Assess Model Use Cases
 
-The servers herein are configured to utilize the Udacity classroom workspace. As such,
-to run on your local machine, you will need to change the below file:
+Some of the potential use cases of the people counter app are...
 
-```
-webservice/ui/src/constants/constants.js
-```
+Each of these use cases would be useful because...
 
-The `CAMERA_FEED_SERVER` and `MQTT_SERVER` both use the workspace configuration. 
-You can change each of these as follows:
+## Assess Effects on End-User Needs
 
-```
-CAMERA_FEED_SERVER: "http://localhost:3004"
-...
-MQTT_SERVER: "ws://localhost:3002"
-```
+Lighting, model accuracy, and camera focal length/image size have different effects on a
+deployed edge model. The potential effects of each of these are as follows...
+
+## Model Research
+
+[This heading is only required if a suitable model was not found after trying out at least three
+different models. However, you may also use this heading to detail how you converted 
+a successful model.]
+
+In investigating potential people counter models, I tried each of the following three models:
+
+- Model 1: [Name]
+  - [Model Source]
+  - I converted the model to an Intermediate Representation with the following arguments...
+  - The model was insufficient for the app because...
+  - I tried to improve the model for the app by...
+  
+- Model 2: [Name]
+  - [Model Source]
+  - I converted the model to an Intermediate Representation with the following arguments...
+  - The model was insufficient for the app because...
+  - I tried to improve the model for the app by...
+
+- Model 3: [Name]
+  - [Model Source]
+  - I converted the model to an Intermediate Representation with the following arguments...
+  - The model was insufficient for the app because...
+  - I tried to improve the model for the app by...
