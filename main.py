@@ -40,11 +40,10 @@ HOSTNAME = socket.gethostname()
 IPADDRESS = socket.gethostbyname(HOSTNAME)
 MQTT_HOST = IPADDRESS
 
-# How long algorithm shall display the previous box if its new location was not
-# found in the image
+# Time for a box to show up until not detected the next time
 TIMEOUT = 2000
 
-# List of boxes discovered in previous frame
+# List of boxes discovered in previously
 PREVIOUS_BOXES = []
 
 def build_argparser():
@@ -81,7 +80,7 @@ def draw_boxes(frame, result, width, height, prob_t):
     Draw bounding boxes onto the frame.
     '''
 
-    color = (255,60,0)
+    color = (0,60,255)
 
     def confidence(box):
         return box[2]
@@ -110,11 +109,6 @@ def draw_boxes(frame, result, width, height, prob_t):
                 if append == True:
                     best_boxes.append(box)
 
-        ### TODO: In real deployment all the boxes shall be treated separately
-        ### because they may disappear independently. The code below should
-        ### update relevant previous boxes with its new location. It can be
-        ### potentially done by checking if location of preview box and new box
-        ### location at least partially overlap 
         PREVIOUS_BOXES = []
         for box in best_boxes:
             xmin = int(box[3] * width)
@@ -154,7 +148,7 @@ def infer_on_stream(args, client):
     :param client: MQTT client
     :return: None
     """
-    print("**********\tinfer_on_stream initialized\t**********\n")
+    # print("**********\tinfer_on_stream initialized\t**********\n")
     # Initialise the class
     infer_network = Network()
 
@@ -166,23 +160,23 @@ def infer_on_stream(args, client):
                              args.cpu_extension)
 
     in_shape = infer_network.get_input_shape()
-    print("----------\tInput Shape of the Model: " +
-          str(in_shape), "\t----------")
+    # print("----------\tInput Shape of the Model: " +
+    #      str(in_shape), "\t----------")
     # exit(1)
 
     ### TODO: Handle the input stream ###
     cap = cv2.VideoCapture(args.input)
     if not cap.isOpened():
-        print("Unable to open input. Exiting...")
+        # print("Unable to open input. Exiting...")
         exit(1)
     cap.open(args.input)
-    print("----------\tVideo Capture Opened\t----------")
+    # print("----------\tVideo Capture Opened\t----------")
 #    exit(1)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    print("----------\tWidth:", width, "Height:", height, "\t----------")
+    # print("----------\tWidth:", width, "Height:", height, "\t----------")
     # exit(1)
     frames = 0
     found = False
@@ -190,11 +184,11 @@ def infer_on_stream(args, client):
 
     ### TODO: Loop until stream is over ###
     while cap.isOpened():
-        print("-----------\tStream Loop Started\t-----------")
+        # print("-----------\tStream Loop Started\t-----------")
         ### TODO: Read from the video capture ###
         flag, frame = cap.read()
         if not flag:
-            print("Cannot read the input stream. Exiting...")
+            # print("Cannot read the input stream. Exiting...")
             exit(1)
         key_pressed = cv2.waitKey(60)
 
@@ -204,26 +198,27 @@ def infer_on_stream(args, client):
         p_frame = cv2.resize(frame, (in_shape[3], in_shape[2]))
         p_frame = p_frame.transpose((2, 0, 1))
         p_frame = p_frame.reshape(1, *p_frame.shape)
-        print("----------\tImage Resized to fit: ",
-              p_frame.shape, "\t----------")
+        # print("----------\tImage Resized to fit: ",
+        #      p_frame.shape, "\t----------")
         # exit(1)
 
         ### TODO: Start asynchronous inference for specified request ###
         infer_network.exec_net(p_frame)
-        print("----------\tASync Start\t----------")
-
+        # print("----------\tASync Start\t----------")
+        # cv2.imwrite("output0.jpg", frame)
         ### TODO: Wait for the result ###
         if infer_network.wait() == 0:
-            print("----------\tASync Wait\t----------")
+            # print("----------\tASync Wait\t----------")
 
             ### TODO: Get the results of the inference request ###
             result = infer_network.get_output()
-            print("----------\tInference Output: ",
-                  result.shape, "\t----------")
+            # print("----------\tInference Output: ",
+            #      result.shape, "\t----------")
 
             ### TODO: Extract any desired stats from the results ###
             frame, count = draw_boxes(
                 frame, result, width, height, probabily_threshold)
+            # cv2.imwrite("output.jpg", frame)
             # exit(1)
             on_t = frames/fps
             ### Detect new person ###
@@ -246,17 +241,18 @@ def infer_on_stream(args, client):
             # ### TODO: Extract any desired stats from the results ###
             on_t_mssg = "On Screen time: {:.3f}ms".format(on_t * 1000)
             count_mssg = "People counted: {}".format(t_count)
-            # print(on_t_mssg)
-            # print("----------\tOn Screen Time\t----------")
-            # print(count_mssg)
-            # print("----------\tTotal Count\t----------")
+            # # print(on_t_mssg)
+            # # print("----------\tOn Screen Time\t----------")
+            # # print(count_mssg)
+            # # print("----------\tTotal Count\t----------")
             # # exit(1)
             
             ### Write Scree-on time and count on screen ###
             cv2.putText(img=frame, text=str(count_mssg), org=(
-                15, 15), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255, 60, 00), thickness=1)
+                15, 15), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(10, 60, 255), thickness=1)
             cv2.putText(img=frame, text=str(on_t_mssg), org=(
-                15, 35), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(255, 60, 00), thickness=1)
+                15, 35), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(10, 60, 255), thickness=1)
+            # cv2.imwrite("output1.jpg", frame)
             # exit(1)
             
         ### TODO: Send the frame to the FFMPEG server ###
@@ -267,9 +263,10 @@ def infer_on_stream(args, client):
         ### TODO: Write an output image if `single_image_mode` ###
         else:
             cv2.imwrite("output.jpg", frame)
-            print("-*-*-*-*-*\tImage saved: output.jpg\t*-*-*-*-*-")
+            # print("-*-*-*-*-*\tImage saved: output.jpg\t*-*-*-*-*-")
         if key_pressed == 27:
             break
+        # exit(1)
 
     cap.release()
     cv2.destroyAllWindows()
@@ -286,7 +283,6 @@ def main():
     # Grab command line args
     args = build_argparser().parse_args()
     # Connect to the MQTT server
-    # print(args, "\n---------------------------------------  ARGS    ---------------------------------------")
     client = connect_mqtt()
     # Perform inference on the input stream
     infer_on_stream(args, client)
@@ -294,5 +290,5 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # Network.kill()
+    Network.kill()
     exit(0)

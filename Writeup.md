@@ -666,7 +666,7 @@ In investigating potential people counter models, I tried each of the following 
     ```
 
   - The model was insufficient for the app because it resulted in very slow inference, so much that I could not even identify if the inference is taking place or not as each frame was held for a long time.
-  - I tried to improve the model for the app by trying to create a `FP16 ` model and even changing the shape from `[1,600,1024,3]` to `[1,800,800,3]` as I initially started with those configurations. Though it resulted in better performance, the inference was still pretty sluggish.
+  - I tried to improve the model for the app by trying to create a `FP16` model and even changing the shape from `[1,600,1024,3]` to `[1,800,800,3]` as I initially started with those configurations. Though it resulted in better performance, the inference was still pretty sluggish.
 
 - Model 3: [Name]
   - [Model Source]
