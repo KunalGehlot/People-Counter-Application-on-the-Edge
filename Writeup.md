@@ -26,7 +26,8 @@ The official writeup explaining about OpenVINO Toolkit explaining about its impa
 - [4. Assess Effects on End-User Needs](#4-assess-effects-on-end-user-needs)
 - [5. Model Research](#5-model-research)
   - [Model 1: **Mask-RCNN**](#model-1-mask-rcnn)
-  - [Model 2: **Faster-RCNN**](#model-2-faster-rcnn)
+  - [Model 2: **Faster-RCNN V2**](#model-2-faster-rcnn-v2)
+  - [Model 3: **SSD MobileNet V2**](#model-3-ssd-mobilenet-v2)
 
 <br><br><br><br>
 
@@ -646,7 +647,7 @@ In investigating potential people counter models, I tried each of the following 
   - The model was insufficient for the app because I quickly realized that the Mask coordinates were not given out in the dictionary format, as it normally would in a Tensorflow application and was getting really difficult for me to analyze and identify the output values to generate any mask, bounding box or detection.
   - I tried to improve the model for the app by reading the `nd.array` output and trying to compare it with the dictionary output of the Tensorflow example, but could not make any relation whatsoever.
   
-## Model 2: **Faster-RCNN**
+## Model 2: **Faster-RCNN V2**
 [Source](https://docs.openvinotoolkit.org/2020.1/_docs_MO_DG_prepare_model_convert_model_Convert_Model_From_TensorFlow.html)
 
   - I converted the model to an Intermediate Representation with the following arguments
@@ -666,10 +667,24 @@ In investigating potential people counter models, I tried each of the following 
     ```
 
   - The model was insufficient for the app because it resulted in very slow inference, so much that I could not even identify if the inference is taking place or not as each frame was held for a long time.
-  - I tried to improve the model for the app by trying to create a `FP16` model and even changing the shape from `[1,600,1024,3]` to `[1,800,800,3]` as I initially started with those configurations. Though it resulted in better performance, the inference was still pretty sluggish.
+  - I tried to improve the model for the app by trying to create a `FP16` model and even changing the shape from `[1,600,1024,3]` to `[1,800,800,3]` as I initially started with those configurations. Though it resulted in better performance, the inference was still pretty sluggish. *(Refer to commit [#dbf2d06](https://github.com/KunalGehlot/People-Counter-Application-on-the-Edge/commit/dbf2d0602e28b5e9fb2864f1657e49afda33e63b))*
 
-- Model 3: [Name]
-  - [Model Source]
-  - I converted the model to an Intermediate Representation with the following arguments...
-  - The model was insufficient for the app because...
-  - I tried to improve the model for the app by...
+## Model 3: **SSD MobileNet V2**
+  [Source](https://docs.openvinotoolkit.org/2020.1/_docs_MO_DG_prepare_model_convert_model_Convert_Model_From_TensorFlow.html)
+  - I converted the model to an Intermediate Representation with the following arguments
+    
+    *Download the model tar file*
+    ```
+    wget http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz
+    ```
+
+    *Extract the tar file*
+    ```
+    tar -xvf ssd_mobilenet_v2_coco_2018_03_29.tar.gz
+    ```
+    *To convert is using Model Optimizer*
+    ```
+    /opt/intel/openvino/deployment_tools/model_optimizer/mo_tf.py --input_model ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb --data_type FP16 --input_shape [1,600,600,3] --reverse_input_channels --transformations_config /opt/intel/openvino/deployment_tools/model_optimizer/extensions/front/tf/ssd_v2_support.json --tensorflow_object_detection_api_pipeline_config ssd_mobilenet_v2_coco_2018_03_29/pipeline.config --model_name ssd_mobilenet_v2_coco
+    ```
+  - The model was insufficient for the app because I quickly realized that the Mask coordinates were not given out in the dictionary format, as it normally would in a Tensorflow application and was getting really difficult for me to analyze and identify the output values to generate any mask, bounding box or detection.
+  - I tried to improve the model for the app by reading the `nd.array` output and trying to compare it with the dictionary output of the Tensorflow example, but could not make any relation whatsoever.
