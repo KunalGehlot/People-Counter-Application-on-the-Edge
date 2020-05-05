@@ -21,8 +21,6 @@ Find the Official Project Write-up [here](Writeup.md)
       - [Setup the environment](#setup-the-environment)
       - [Running on CPU (Default)](#running-on-cpu-default)
       - [Viewing the App in your Browser](#viewing-the-app-in-your-browser)
-- [Code documentation and development process](#code-documentation-and-development-process)
-  - [**Coming soon...**](#coming-soon)
 
 # Introduction
 
@@ -115,7 +113,3 @@ python3 main.py -i resources/Pedestrian_Detect_2_1_1.mp4 -m frozen_inference_gra
 To see the output on a web based interface, open the link http://0.0.0.0:3004 in a browser.
 
 *(Note: If the above URL Redirects to Intel's Github, try visiting http://0.0.0.0:3000 or redirecting the stream to Port 3005.)*
-
-# Code documentation and development process
-
-## **Coming soon...**
