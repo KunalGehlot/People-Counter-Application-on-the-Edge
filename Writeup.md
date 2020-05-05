@@ -25,6 +25,8 @@ The official writeup explaining about OpenVINO Toolkit explaining about its impa
 - [3. Assess Model Use Cases](#3-assess-model-use-cases)
 - [4. Assess Effects on End-User Needs](#4-assess-effects-on-end-user-needs)
 - [5. Model Research](#5-model-research)
+  - [Model 1: **Mask-RCNN**](#model-1-mask-rcnn)
+  - [Model 2: **Faster-RCNN**](#model-2-faster-rcnn)
 
 <br><br><br><br>
 
@@ -579,6 +581,8 @@ Some of the potential reasons for handling custom layers are:
 
 # 2. Comparing Model Performance
 
+**Coming up ...**
+
 My method(s) to compare models before and after conversion to Intermediate Representations
 were...
 
@@ -590,34 +594,79 @@ The inference time of the model pre- and post-conversion was...
 
 # 3. Assess Model Use Cases
 
-Some of the potential use cases of the people counter app are...
+People counter applications can be used in many cases, especially in Retail Analysis, Queue Management and Space Utilization applications. 
 
-Each of these use cases would be useful because...
+With ***COVID-19*** currently being the pressing topic of today's world, we can use People Counter Application to keep track of social distancing measures and if they are properly being implemented. It can be used with already deployed CCTV systems by Governments around the world to make sure a crowd is not getting accumulated at any place.
+
+Retial Stores and businesses can also deploy this system to get detailed insights on:
+ - Store's conversion Ratio
+ - Compare a store's performance across a world-wide network
+ - Calculate footfall pattern
+ - Average time spent in store
+ - Optimize building layout
+
+and much more.. 
+
+Hence a People Counter system can be useful in Retail Stores, SuperMarkets, Shopping Malls, Museums and Galleries, Train Stations and Airports, Outdoors and City centres, etc.
+
+Each of these use cases would be useful because it can help save lives in case of COVID-19 social distancing enforcement, give businesses insights on how to provide better customer satisfaction and can help companies generate profits through identifying the type of customers and align themselves to their preferences. It can also help architects in case of Airports and Stations to handle crowds and peak times effectively.
 
 # 4. Assess Effects on End-User Needs
 
 Lighting, model accuracy, and camera focal length/image size have different effects on a
-deployed edge model. The potential effects of each of these are as follows...
+deployed edge model. The potential effects of each of these are as follows:
+
+- *Lighting -*  Perhaps no other aspects of a computer vision model has consistently caused delays, false detections and detection failures than lighting. In an ideal scenario, lighting would maximize the contrast on features of interest, and would in turn make it easier for a model to detect separate instances of object, in our case person. Since most of the use cases of a people counter application rely on a static CCTV camera, it is critical to have a proper lighting in the area it aims to cover or it may cause false detections or no-detection at all.
+- *Model Accuracy -* The model needs to be highly accurate if deployed in a mass scale as it may cause false detections or no-detection which can produce misleading data, and in case of retail applications may cause the company or business to lose money. 
+- *Image Size/Focal Length -* It is critical to have a sharp and high resolution image as an input to our model to make it easy for it to perform segmentation easily and keep the features of interest detectable.
 
 # 5. Model Research
 
-[This heading is only required if a suitable model was not found after trying out at least three
-different models. However, you may also use this heading to detail how you converted 
-a successful model.]
-
 In investigating potential people counter models, I tried each of the following three models:
 
-- Model 1: [Name]
-  - [Model Source]
-  - I converted the model to an Intermediate Representation with the following arguments...
-  - The model was insufficient for the app because...
-  - I tried to improve the model for the app by...
+## Model 1: **Mask-RCNN**
+  [Source](https://docs.openvinotoolkit.org/2020.1/_docs_MO_DG_prepare_model_convert_model_Convert_Model_From_TensorFlow.html)
+  - I converted the model to an Intermediate Representation with the following arguments
+    
+    *Download the model tar file*
+    ```
+    wget http://download.tensorflow.org/models/object_detection/mask_rcnn_inception_v2_coco_2018_01_28.tar.gz
+    ```
+
+    *Extract the tar file*
+    ```
+    tar -xvf mask_rcnn_inception_v2_coco_2018_01_28.tar.gz
+    ```
+    *To convert is using Model Optimizer*
+    ```
+    /opt/intel/openvino/deployment_tools/model_optimizer/mo_tf.py --input_model mask_rcnn_inception_v2_coco_2018_01_28/frozen_inference_graph.pb --data_type FP32 --input_shape [1,800,800,3] --reverse_input_channels --transformations_config /opt/intel/openvino/deployment_tools/model_optimizer/extensions/front/tf/mask_rcnn_support.json --tensorflow_object_detection_api_pipeline_config mask_rcnn_inception_v2_coco_2018_01_28/pipeline.config
+    ```
+
+
+  - The model was insufficient for the app because I quickly realized that the Mask coordinates were not given out in the dictionary format, as it normally would in a Tensorflow application and was getting really difficult for me to analyze and identify the output values to generate any mask, bounding box or detection.
+  - I tried to improve the model for the app by reading the `nd.array` output and trying to compare it with the dictionary output of the Tensorflow example, but could not make any relation whatsoever.
   
-- Model 2: [Name]
-  - [Model Source]
-  - I converted the model to an Intermediate Representation with the following arguments...
-  - The model was insufficient for the app because...
-  - I tried to improve the model for the app by...
+## Model 2: **Faster-RCNN**
+[Source](https://docs.openvinotoolkit.org/2020.1/_docs_MO_DG_prepare_model_convert_model_Convert_Model_From_TensorFlow.html)
+
+  - I converted the model to an Intermediate Representation with the following arguments
+    
+    *Download the model tar file*
+    ```
+    wget http://download.tensorflow.org/models/object_detection/faster_rcnn_inception_v2_coco_2018_01_28.tar.gz
+    ```
+
+    *Extract the tar file*
+    ```
+    tar -xvf faster_rcnn_inception_v2_coco_2018_01_28.tar.gz
+    ```
+    *To convert is using Model Optimizer*
+    ```
+    /opt/intel/openvino/deployment_tools/model_optimizer/mo_tf.py --input_model faster_rcnn_inception_v2_coco_2018_01_28/frozen_inference_graph.pb --data_type FP16 --input_shape [1,800,800,3] --reverse_input_channels --transformations_config /opt/intel/openvino/deployment_tools/model_optimizer/extensions/front/tf/mask_rcnn_support.json --tensorflow_object_detection_api_pipeline_config faster_rcnn_inception_v2_coco_2018_01_28/pipeline.config
+    ```
+
+  - The model was insufficient for the app because it resulted in very slow inference, so much that I could not even identify if the inference is taking place or not as each frame was held for a long time.
+  - I tried to improve the model for the app by trying to create a `FP16 ` model and even changing the shape from `[1,600,1024,3]` to `[1,800,800,3]` as I initially started with those configurations. Though it resulted in better performance, the inference was still pretty sluggish.
 
 - Model 3: [Name]
   - [Model Source]
