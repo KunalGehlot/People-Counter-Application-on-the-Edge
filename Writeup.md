@@ -688,5 +688,4 @@ In investigating potential people counter models, I tried each of the following 
     ```
     /opt/intel/openvino/deployment_tools/model_optimizer/mo_tf.py --input_model ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb --data_type FP16 --input_shape [1,600,600,3] --reverse_input_channels --transformations_config /opt/intel/openvino/deployment_tools/model_optimizer/extensions/front/tf/ssd_v2_support.json --tensorflow_object_detection_api_pipeline_config ssd_mobilenet_v2_coco_2018_03_29/pipeline.config --model_name ssd_mobilenet_v2_coco
     ```
-  - The model was insufficient for the app because I quickly realized that the Mask coordinates were not given out in the dictionary format, as it normally would in a Tensorflow application and was getting really difficult for me to analyze and identify the output values to generate any mask, bounding box or detection.
-  - I tried to improve the model for the app by reading the `nd.array` output and trying to compare it with the dictionary output of the Tensorflow example, but could not make any relation whatsoever.
+-  The model lost some accuracy and the bounding box is not perfect, but the performance is much better
