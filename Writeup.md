@@ -582,16 +582,18 @@ Some of the potential reasons for handling custom layers are:
 
 # 2. Comparing Model Performance
 
-**Coming up ...**
+<!-- **Coming up ...** -->
 
-My method(s) to compare models before and after conversion to Intermediate Representations
+<!-- My method(s) to compare models before and after conversion to Intermediate Representations
 were...
 
-The difference between model accuracy pre- and post-conversion was...
+The difference between model accuracy pre- and post-conversion was... -->
 
-The size of the model pre- and post-conversion was...
+The size of the model pre- and post-conversion was:
+- 69.7 MB before conversion (`forzen_inference.pb`)
+- 33.9 MB after conversion (`ssd_mobilenet_v2_coco.xml` + `ssd_mobilenet_v2_coco.xml`)
 
-The inference time of the model pre- and post-conversion was...
+<!-- The inference time of the model pre- and post-conversion was... -->
 
 # 3. Assess Model Use Cases
 
