@@ -46,6 +46,7 @@ TIMEOUT = 2000
 # List of boxes discovered in previously
 PREVIOUS_BOXES = []
 
+
 def build_argparser():
     """
     Parse command line arguments.
@@ -80,15 +81,13 @@ def draw_boxes(frame, result, width, height, prob_t):
     Draw bounding boxes onto the frame.
     '''
 
-    color = (0,60,255)
-
     def confidence(box):
         return box[2]
 
     global PREVIOUS_BOXES
     boxes = []
     best_boxes = []
-    for box in result[0][0]: # Output shape is 1x1x100x7
+    for box in result[0][0]:
         conf = box[2]
         if conf >= prob_t and box[1] == 1:
             boxes.append(box)
@@ -115,10 +114,9 @@ def draw_boxes(frame, result, width, height, prob_t):
             ymin = int(box[4] * height)
             xmax = int(box[5] * width)
             ymax = int(box[6] * height)
-            cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), color, 1)
+            cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 1)
             PREVIOUS_BOXES.append((datetime.timestamp(datetime.now()), box))
     else:
-        
         if len(PREVIOUS_BOXES) > 0:
             for box in PREVIOUS_BOXES:
                 if datetime.timestamp(datetime.now()) - box[0] < TIMEOUT and box[1][3] > 0.01 and box[1][5] < 0.99:
@@ -128,7 +126,7 @@ def draw_boxes(frame, result, width, height, prob_t):
                 ymin = int(box[4] * height)
                 xmax = int(box[5] * width)
                 ymax = int(box[6] * height)
-                cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), color, 1)
+                cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 1)
     return frame, len(best_boxes)
 
 
@@ -246,7 +244,7 @@ def infer_on_stream(args, client):
             # # print(count_mssg)
             # # print("----------\tTotal Count\t----------")
             # # exit(1)
-            
+
             ### Write Scree-on time and count on screen ###
             cv2.putText(img=frame, text=str(count_mssg), org=(
                 15, 15), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(10, 60, 255), thickness=1)
@@ -254,7 +252,10 @@ def infer_on_stream(args, client):
                 15, 35), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(10, 60, 255), thickness=1)
             # cv2.imwrite("output1.jpg", frame)
             # exit(1)
-            
+
+        if key_pressed == 10:
+            cv2.imwrite("output.jpg", frame)
+
         ### TODO: Send the frame to the FFMPEG server ###
         if (frame_count > 0 or frame_count == -1):
             sys.stdout.buffer.write(frame)
