@@ -80,54 +80,16 @@ def draw_boxes(frame, result, width, height, prob_t):
     '''
     Draw bounding boxes onto the frame.
     '''
-
-    def confidence(box):
-        return box[2]
-
-    global PREVIOUS_BOXES
-    boxes = []
-    best_boxes = []
-    for box in result[0][0]:
-        conf = box[2]
-        if conf >= prob_t and box[1] == 1:
-            boxes.append(box)
-    if len(boxes) > 0:
-        boxes.sort(key=confidence, reverse=True)
-        found = False
-        best_boxes = []
-        for box in boxes:
-            if found == False:
-                found = True
-                best_boxes.append(box)
-            else:
-                append = True
-                for best_box in best_boxes:
-                    if not (box[3] > best_box[5] or box[5] < best_box[3] or box[4] > best_box[6] or box[6] < best_box[4]):
-                        append = False
-                        break
-                if append == True:
-                    best_boxes.append(box)
-
-        PREVIOUS_BOXES = []
-        for box in best_boxes:
-            xmin = int(box[3] * width)
-            ymin = int(box[4] * height)
-            xmax = int(box[5] * width)
-            ymax = int(box[6] * height)
-            cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 1)
-            PREVIOUS_BOXES.append((datetime.timestamp(datetime.now()), box))
-    else:
-        if len(PREVIOUS_BOXES) > 0:
-            for box in PREVIOUS_BOXES:
-                if datetime.timestamp(datetime.now()) - box[0] < TIMEOUT and box[1][3] > 0.01 and box[1][5] < 0.99:
-                    best_boxes.append(box[1])
-            for box in best_boxes:
-                xmin = int(box[3] * width)
-                ymin = int(box[4] * height)
-                xmax = int(box[5] * width)
-                ymax = int(box[6] * height)
-                cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 0, 255), 1)
-    return frame, len(best_boxes)
+    current_count = 0
+    for obj in result[0][0]:
+        if obj[2] > prob_t:
+            xmin = int(obj[3] * width)
+            ymin = int(obj[4] * height)
+            xmax = int(obj[5] * width)
+            ymax = int(obj[6] * height)
+            cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 55, 255), 1)
+            current_count = current_count + 1
+    return frame, current_count
 
 
 def connect_mqtt():
@@ -153,19 +115,31 @@ def infer_on_stream(args, client):
     # Set Probability threshold for detections
     probabily_threshold = args.prob_threshold
 
-    ### TODO: Load the model through `infer_network` ###
-    infer_network.load_model(args.model, args.device,
-                             args.cpu_extension)
+    imageFlag = False
 
-    in_shape = infer_network.get_input_shape()
+    previous = 0
+    total = 0
+    start = 0
+
+    ### TODO: Load the model through `infer_network` ###
+    n, c, h, w = infer_network.load_model(args.model, args.device,
+                             args.cpu_extension)
+    
+    if args.input == 'CAM':
+        input_stream = 0
+    elif args.input.endswith('.jpg') or args.input.endswith('.bmp') :
+        imageFlag = True
+        input_stream = args.input
+    else:
+        input_stream = args.input
     # print("----------\tInput Shape of the Model: " +
     #      str(in_shape), "\t----------")
     # exit(1)
 
     ### TODO: Handle the input stream ###
-    cap = cv2.VideoCapture(args.input)
+    cap = cv2.VideoCapture(input_stream)
     if not cap.isOpened():
-        # print("Unable to open input. Exiting...")
+        print("Unable to open input. Exiting...")
         exit(1)
     cap.open(args.input)
     # print("----------\tVideo Capture Opened\t----------")
@@ -176,9 +150,6 @@ def infer_on_stream(args, client):
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     # print("----------\tWidth:", width, "Height:", height, "\t----------")
     # exit(1)
-    frames = 0
-    found = False
-    t_count = 0
 
     ### TODO: Loop until stream is over ###
     while cap.isOpened():
@@ -186,59 +157,56 @@ def infer_on_stream(args, client):
         ### TODO: Read from the video capture ###
         flag, frame = cap.read()
         if not flag:
-            # print("Cannot read the input stream. Exiting...")
+            print("Cannot read the input stream. Exiting...")
             exit(1)
         key_pressed = cv2.waitKey(60)
 
         ### TODO: Pre-process the image as needed ###
-        if frame_count == -1:
-            frame = cv2.cvtColor((frame, cv2.COLOR_YUV2BGR_I420))
-        p_frame = cv2.resize(frame, (in_shape[3], in_shape[2]))
-        p_frame = p_frame.transpose((2, 0, 1))
-        p_frame = p_frame.reshape(1, *p_frame.shape)
+        image = cv2.resize(frame,(w,h))
+        image = image.transpose((2,0,1))
+        image = image.reshape((n. c. h. w))
         # print("----------\tImage Resized to fit: ",
         #      p_frame.shape, "\t----------")
         # exit(1)
 
+        start_t = time.time()
+        infer_network.exec_net(0, image)
         ### TODO: Start asynchronous inference for specified request ###
-        infer_network.exec_net(p_frame)
         # print("----------\tASync Start\t----------")
         # cv2.imwrite("output0.jpg", frame)
         ### TODO: Wait for the result ###
         if infer_network.wait() == 0:
             # print("----------\tASync Wait\t----------")
-
+            d_time = time.time() - start_t
             ### TODO: Get the results of the inference request ###
-            result = infer_network.get_output()
+        result = infer_network.get_output(0)
             # print("----------\tInference Output: ",
             #      result.shape, "\t----------")
 
             ### TODO: Extract any desired stats from the results ###
-            frame, count = draw_boxes(
-                frame, result, width, height, probabily_threshold)
+        frame, count = draw_boxes(
+            frame, result, width, height, probabily_threshold)
             # cv2.imwrite("output.jpg", frame)
             # exit(1)
-            on_t = frames/fps
-            ### Detect new person ###
-            if not found and count > 0:
-                t_count += count
-                found = True
-            if found and count > 0:
-                frames += 1
-            if found and count == 0:
-                found = False
-                ### Send to MQTT Server ###
-                on_t = int(frames/fps)
-                client.publish("person/duration",
-                               json.dumps({"duration": on_t}))
-                frames = 0
-            ### Send to MQTT Server ###
-            client.publish("person",
-                           json.dumps({"count": count, "total": t_count}))
+        if count > previous:
+            start = time.time()
+            total+= count - previous
+            client.publish("person", json.dumps({"total": total}))
+
+            # Person duration in the video is calculated
+        if count < previous:
+            duration = int(time.time() - start)
+               # Publish messages to the MQTT server
+            client.publish("person/duration",
+                              json.dumps({"duration": duration}))
+
+       
+        client.publish("person", json.dumps({"count": count}))
+        previous = count      
 
             # ### TODO: Extract any desired stats from the results ###
-            on_t_mssg = "On Screen time: {:.3f}ms".format(on_t * 1000)
-            count_mssg = "People counted: {}".format(t_count)
+        d_time_mssg = "On Screen time: {:.3f}ms".format(d_time * 1000)
+        count_mssg = "People counted: {}".format(total)
             # # print(on_t_mssg)
             # # print("----------\tOn Screen Time\t----------")
             # # print(count_mssg)
@@ -246,10 +214,10 @@ def infer_on_stream(args, client):
             # # exit(1)
 
             ### Write Scree-on time and count on screen ###
-            cv2.putText(img=frame, text=str(count_mssg), org=(
-                15, 15), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(10, 60, 255), thickness=1)
-            cv2.putText(img=frame, text=str(on_t_mssg), org=(
-                15, 35), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(10, 60, 255), thickness=1)
+        cv2.putText(img=frame, text=str(count_mssg), org=(
+            15, 15), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(10, 60, 255), thickness=1)
+        cv2.putText(img=frame, text=str(d_time_mssg), org=(
+            15, 35), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(10, 60, 255), thickness=1)
             # cv2.imwrite("output1.jpg", frame)
             # exit(1)
 

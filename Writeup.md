@@ -588,6 +588,7 @@ Some of the potential reasons for handling custom layers are:
 were...
 
 The difference between model accuracy pre- and post-conversion was... -->
+For SSD MobileNet V2:
 
 The size of the model pre- and post-conversion was:
 - 69.7 MB before conversion (`forzen_inference.pb`)
@@ -688,4 +689,7 @@ In investigating potential people counter models, I tried each of the following 
     ```
     /opt/intel/openvino/deployment_tools/model_optimizer/mo_tf.py --input_model ssd_mobilenet_v2_coco_2018_03_29/frozen_inference_graph.pb --data_type FP16 --input_shape [1,300,300,3] --reverse_input_channels --transformations_config /opt/intel/openvino/deployment_tools/model_optimizer/extensions/front/tf/ssd_v2_support.json --tensorflow_object_detection_api_pipeline_config ssd_mobilenet_v2_coco_2018_03_29/pipeline.config --model_name ssd_mobilenet_v2_coco
     ```
--  The model lost some accuracy and the bounding box is not perfect, but the performance is much better
+-  The model lost some accuracy but the performance is much better. The bounding boxes were all over the place and hence did not give accurate results on count.
+-  I tried to improve the results by reducing the probablity threshold but it landed in getting false positives a lot.
+
+Due to all of the above mentioned problems I ended up using Person Detection Retail model from OpenVINO model zoo.

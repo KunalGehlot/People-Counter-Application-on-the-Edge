@@ -34,7 +34,7 @@ The counter will use the Inference Engine included in the Intel® Distribution o
 
 You will choose a model to use and convert it with the Model Optimizer.
 
-![architectural diagram](./images/arch_diagram.png)
+![architectural diagram](images/arch_diagram.png)
 
 ## Requirements (Only for this code)
 
@@ -103,7 +103,7 @@ source /opt/intel/openvino/bin/setupvars.sh -pyver 3.5
 Run the following command
 
 ```
-python3 main.py -i resources/Pedestrian_Detect_2_1_1.mp4 -m frozen_inference_graph.xml -d CPU -pt 0.7 | ffmpeg -v warning -f rawvideo -pixel_format bgr24 -video_size 768x432 -framerate 24 -i - http://0.0.0.0:3004/fac.ffm
+python3 main.py -i resources/Pedestrian_Detect_2_1_1.mp4 -m person-detection-retail-0013.xml -d CPU -pt 0.7 | ffmpeg -v warning -f rawvideo -pixel_format bgr24 -video_size 768x432 -framerate 24 -i - http://0.0.0.0:3004/fac.ffm
 ```
 
 *(Note: This command is only for running inference on CPU in Linux environment with Faster R-CNN Inception V2 on the given video file in resources, for any changes refer to default project instructions.)*

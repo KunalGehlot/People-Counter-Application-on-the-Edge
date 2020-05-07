@@ -25,7 +25,7 @@
 import os
 import sys
 import logging as log
-from openvino.inference_engine import IENetwork, IECore
+from openvino.inference_engine import IENetwork, IEPlugin
 
 
 class Network:
@@ -49,32 +49,34 @@ class Network:
         model_xml = model
         model_bin = os.path.splitext(model_xml)[0] + ".bin"
         # print("----------\tModel and Weights loaded\t----------")
-        self.plugin = IECore()
+        self.plugin = IEPlugin()
+        
+        if not plugin:
+            self.plugin = IEPlugin(device=device)
+        else:
+            self.plugin = plugin
+
+        if cpu_extension and 'CPU' in device:
+            self.plugin.add_cpu_extension(cpu_extension)
+        
         self.network = IENetwork(model=model_xml, weights=model_bin)
         # print("----------\tIE Core and Network loaded\t----------")
         ### TODO: Check for supported layers ###
-        supported_layers = self.plugin.query_network(
-            network=self.network, device_name=device)
-        unsupported_layers = [
-            l for l in self.network.layers.keys() if l not in supported_layers]
-        if len(unsupported_layers) != 0:
-            # print("Unsupported layers found: {}".format(unsupported_layers))
-            # print("Check whether extensions are available to add to IECore. Exiting...")
-            exit(1)
+        if self.plugin.device == "CPU":
+            supported_layers = self.plugin.get_supported_layers(self.network)
+            unsupported_layers = [layers for layers in self.network.layers.keys() if layers not in supported_layers]
+            if len(unsupported_layers) != 0:
+                print("Unsupported layers found: {}".format(unsupported_layers))
+                print("Check whether extensions are available to add to IECore. Exiting...")
+                exit(1)
         # print("----------\tChecked for supported layers\t----------")
         ### TODO: Add any necessary extensions ###
-        if cpu_extension and "CPU" in device:
-            self.plugin.add_extension(cpu_extension, device)
-        # print("----------\tAdded CPU extension\t----------")
-        self.exec_network = self.plugin.load_network(self.network, device)
-        # print("----------\tNetwork loaded\t----------")
-        it = iter(self.network.inputs)
-        self.input_blob_info = None
-        self.input_blob = next(it)
-        if self.input_blob == "image_info":
-            self.input_blob_info = self.input_blob
-            self.input_blob = next(it)
-        self.output_blob = next(iter(self.network.outputs))
+        self.net_plugin = self.plugin.load(network=self.network, num_requests=0)
+
+        self.input_blob = next(iter(self.network.inputs))
+        self.out_blob = next(iter(self.network.outputs))
+        
+        return self.plugin, self.get_input_shape()
         # print("**********\tNetwork.load_model finished\t**********\n")
         ### TODO: Return the loaded inference plugin ###
         ### Note: You may need to update the function parameters. -- Loaded with model, device, CPU_EXTENSION, plugin ###
@@ -83,17 +85,18 @@ class Network:
         ### TODO: Return the shape of the input layer ###
         return self.network.inputs[self.input_blob].shape
 
-    def get_output_shape(self):
-        ### NODO: Return the shape of the output layer ###
-        return self.network.outputs[self.output_blob].shape
+    def get_output(self, output=None):
+        if output:
+            result = self.infer_request_handle.outputs[output]
+        else:
+            result = self.net_plugin.requests[0].outputs[self.out_blob]
+        return result
 
     def exec_net(self, image):
         ### TODO: Start an asynchronous request ###
-        inputs = {self.input_blob: image}
-        if self.input_blob_info == "image_info":
-            inputs = {self.input_blob_info: (
-                image.shape[2], image.shape[3], 1), self.input_blob: image}
-        self.exec_network.start_async(request_id=0, inputs=inputs)
+        self.infer_request = self.net_plugin.start_async(
+            request_id=0, inputs={self.input_blob: image})
+        return self.net_plugin
         ### TODO: Return any necessary information -- None ###
         ### Note: You may need to update the function parameters. -- Loaded with image ###
 
@@ -101,7 +104,8 @@ class Network:
         ### TODO: Wait for the request to be complete. ###
         ### TODO: Return any necessary information ###
         ### Note: You may need to update the function parameters. ###
-        return self.exec_network.requests[0].wait(-1)
+        waiting = self.net_plugin.requests[0].wait(-1)
+        return waiting
 
     def get_output(self):
         # TODO: Extract and return the output results
