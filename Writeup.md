@@ -592,7 +592,7 @@ For SSD MobileNet V2:
 
 The size of the model pre- and post-conversion was:
 - 69.7 MB before conversion (`forzen_inference.pb`)
-- 33.9 MB after conversion (`ssd_mobilenet_v2_coco.xml` + `ssd_mobilenet_v2_coco.xml`)
+- 33.9 MB after conversion (`ssd_mobilenet_v2_coco.xml` + `ssd_mobilenet_v2_coco.bin`)
 
 <!-- The inference time of the model pre- and post-conversion was... -->
 
