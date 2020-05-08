@@ -1,6 +1,6 @@
 # People Counter (AI on the Edge)<!-- omit in toc -->
 
-### This Project is a submission of the first project in **Intel Edge AI Nanodegree** at Udacity.<!-- omit in toc -->
+### This Project is an approved submission of the first project in **Intel Edge AI Nanodegree** at Udacity.<!-- omit in toc -->
 
 Find the Official Project Write-up [here](Writeup.md)
 
